@@ -118,7 +118,8 @@ EOF
     expected_result = {:revision => 328,
                        :last_changed_revision => 328,
                        :last_changed_author => 'stellsmi',
-                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
+                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb',
+                       :repository_root => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
 
     assert_info_equal expected_result, parse_info(INFO_XML_OUTPUT)
   end
@@ -127,7 +128,8 @@ EOF
     expected_result = {:revision => 328,
                        :last_changed_revision => 328,
                        :last_changed_author => 'stellsmi',
-                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb/README'}
+                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb/README',
+                       :repository_root => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
 
     assert_info_equal expected_result, parse_info(INFO_XML_OUTPUT_WITH_WORKING_COPY)
   end
@@ -136,7 +138,8 @@ EOF
     expected_result = {:revision => 328,
                        :last_changed_revision => 328,
                        :last_changed_author => 'stellsmi',
-                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
+                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb',
+                       :repository_root => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
 
     assert_info_equal expected_result, parse_info(INFO_XML_OUTPUT_WITH_LOCK)
   end
@@ -145,7 +148,8 @@ EOF
     expected_result = {:revision => 328,
                        :last_changed_revision => 328,
                        :last_changed_author => 'stellsmi',
-                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb/README'}
+                       :url => 'svn://rubyforge.org/var/svn/cruisecontrolrb/README',
+                       :repository_root => 'svn://rubyforge.org/var/svn/cruisecontrolrb'}
 
     assert_info_equal expected_result, parse_info(INFO_XML_OUTPUT_WITH_CONFLICT)
   end
