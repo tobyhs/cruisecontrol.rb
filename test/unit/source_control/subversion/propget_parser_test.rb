@@ -2,6 +2,19 @@ require 'test_helper'
 
 module SourceControl
   class Subversion::LogParserTest < Test::Unit::TestCase
+    def setup
+      repository = 'svn://example.com/var/svn/proj/trunk/lib'
+      @subversion = Subversion.new(:repository => repository)
+      info = Subversion::Info.new(
+        6789,
+        6780,
+        'somebody',
+        repository,
+        'svn://example.com/var/svn/proj'
+      )
+      @subversion.stubs(:info).returns(info)
+      @propget_parser = Subversion::PropgetParser.new(@subversion)
+    end
 
   PROPGET_ENTRY = <<-EOF
 public/javascripts - js-common https://svn.pivotallabs.com/subversion/pivotal-common/trunk/js-common/
@@ -21,7 +34,7 @@ subversion_helper             https://svn.pivotallabs.com/subversion/plugins/piv
        "vendor/plugins/seleniumrc_fu" => "https://svn.pivotallabs.com/subversion/plugins/third_party/seleniumrc_fu/branches/local/seleniumrc_fu",
        "vendor/plugins/subversion_helper" => "https://svn.pivotallabs.com/subversion/plugins/pivotal_core/subversion_helper/trunk/subversion_helper",
        "public/javascripts/js-common" => "https://svn.pivotallabs.com/subversion/pivotal-common/trunk/js-common/",
-       "vendor/ant" => "https://svn.pivotallabs.com/subversion/ant"}, Subversion::PropgetParser.new.parse(PROPGET_ENTRY))
+       "vendor/ant" => "https://svn.pivotallabs.com/subversion/ant"}, @propget_parser.parse(PROPGET_ENTRY))
     end
 
   PROPGET_ENTRY_WITH_FROZEN_EXTERNALS = <<-EOF
@@ -58,9 +71,67 @@ subversion_helper             https://svn.pivotallabs.com/subversion/plugins/piv
   EOF
 
     def test_parse__when_frozen_external__should_not_include_it_in_the_list
-      entries = Subversion::PropgetParser.new.parse(PROPGET_ENTRY_WITH_FROZEN_EXTERNALS)
+      entries = @propget_parser.parse(PROPGET_ENTRY_WITH_FROZEN_EXTERNALS)
       assert_nil entries["vendor/plugins/pivotal_core_bundle"]
   #    assert_equal "https://svn.pivotallabs.com/subversion/plugins/pivotal_core/pivotal_core_bundle/trunk/pivotal_core_bundle", entries["vendor/plugins/pivotal_core_bundle"]
+    end
+
+    PROPGET_ENTRY_WITH_1_5_FORMAT = %{
+      directory - ^/docs documentation
+      # The following is a <= 1.4.x line (to test mixing different formats)
+      foo             http://example.com/repos/zig
+
+      others - ../../ext target_dir
+      /root_ext another_dir
+    }.gsub(/^ +/, '')
+
+    def test_parse_with_1_5_entries
+      assert_equal({
+        'directory/documentation' => 'svn://example.com/var/svn/proj/docs',
+        'directory/foo' => 'http://example.com/repos/zig',
+        'others/target_dir' => 'svn://example.com/var/svn/proj/trunk/ext',
+        'others/another_dir' => 'svn://example.com/root_ext',
+      }, @propget_parser.parse(PROPGET_ENTRY_WITH_1_5_FORMAT))
+    end
+
+    def test_parse_line_with_comment
+      assert_nil @propget_parser.parse_line('# Comment', 'prop_dir')
+    end
+
+    def test_parse_line_with_hyphen_r
+      assert_nil @propget_parser.parse_line(
+        '-r25 http://example.com/repo ext', 'prop_dir'
+      )
+    end
+
+    def test_parse_line_with_1_4_format
+      assert_equal ['http://example.com/svn/foo', 'foo'],
+        @propget_parser.parse_line('foo http://example.com/svn/foo', 'prop_dir')
+    end
+
+    def test_parse_line_with_1_5_format
+      assert_equal ['svn://example.com/var/svn/proj/trunk/ext', 'some_dir'],
+        @propget_parser.parse_line('../../ext some_dir', 'prop_dir')
+    end
+
+    def test_resolve_external_url_with_parent_directory
+      assert_equal 'svn://example.com/var/svn/proj/trunk/ext',
+        @propget_parser.resolve_external_url('../../ext', 'target_dir')
+    end
+
+    def test_resolve_external_url_with_repository_root
+      assert_equal 'svn://example.com/var/svn/proj/ext',
+        @propget_parser.resolve_external_url('^/ext', 'target_dir')
+    end
+
+    def test_resolve_external_url_with_same_scheme
+      assert_equal 'svn://example.net/ext',
+        @propget_parser.resolve_external_url('//example.net/ext', 'target_dir')
+    end
+
+    def test_resolve_external_url_with_server_root
+      assert_equal 'svn://example.com/ext',
+        @propget_parser.resolve_external_url('/ext', 'target_dir')
     end
   end
 end

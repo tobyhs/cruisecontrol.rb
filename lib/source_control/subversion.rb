@@ -93,7 +93,7 @@ module SourceControl
       return {} unless File.exist?(path)
 
       svn_output = svn('propget', ['-R', 'svn:externals'])
-      Subversion::PropgetParser.new.parse(svn_output)
+      Subversion::PropgetParser.new(self).parse(svn_output)
     end
 
     def creates_ordered_build_labels?() true end

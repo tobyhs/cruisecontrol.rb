@@ -82,7 +82,7 @@ class SourceControl::SubversionTest < ActiveSupport::TestCase
     svn = new_subversion
     svn.expects(:svn).with("propget", ["-R", "svn:externals"]).returns("propget results")
     parser = mock("parser")
-    Subversion::PropgetParser.expects(:new).returns(parser)
+    Subversion::PropgetParser.expects(:new).with(svn).returns(parser)
     parser.expects(:parse).returns("parse results")
 
     assert_equal("parse results", svn.externals)
